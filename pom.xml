@@ -7,10 +7,10 @@
   <groupId>com.bonk</groupId>
   <artifactId>bonk</artifactId>
   <version>1.0</version>
+  <packaging>jar</packaging>
 
   <name>bonk</name>
-  <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+  <url>https://github.com/M-Davies/bonk</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -68,6 +68,17 @@
         <plugin>
           <artifactId>maven-project-info-reports-plugin</artifactId>
           <version>3.0.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>1.2.1</version>
+          <configuration>
+            <mainClass>com.bonk.Bonk</mainClass>
+            <arguments>
+              <argument>cli</argument>
+            </arguments>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
