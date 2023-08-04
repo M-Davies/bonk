@@ -6,11 +6,11 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import javax.sound.sampled.*;
 import javax.sound.sampled.LineEvent.Type;
-
-/**
- * Hello world!
- *
- */
+import java.awt.event.*;
+import com.github.kwhat.jnativehook.GlobalScreen;
+import com.github.kwhat.jnativehook.NativeHookException;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 
 class AudioListener implements LineListener {
     private boolean done = false;
@@ -32,7 +32,42 @@ class AudioListener implements LineListener {
 }
 
 public class Bonk {
-    public static void main(String[] args) {
+    public Bonk() {
+        try {
+            GlobalScreen.registerNativeHook();
+            GlobalScreen.addNativeKeyListener(new NativeKeyListener() {
+                boolean ctrlPressed = false;
+
+                @Override
+                public void nativeKeyTyped(NativeKeyEvent nativeEvent) {
+                }
+
+                @Override
+                public void nativeKeyReleased(NativeKeyEvent nativeEvent) {
+                    String keyText = NativeKeyEvent.getKeyText(nativeEvent.getKeyCode());
+                    System.out.println("User Released: " + keyText);
+                    if (ctrlPressed && keyText == "C") {
+                        ctrlPressed = false;
+                        playBonk();
+                    }
+                }
+
+                @Override
+                public void nativeKeyPressed(NativeKeyEvent nativeEvent) {
+                    String keyText = NativeKeyEvent.getKeyText(nativeEvent.getKeyCode());
+                    System.out.println("User Pressed: " + keyText);
+                    if (keyText == "Ctrl") {
+                        ctrlPressed = true;
+                    }
+                }
+            });
+            System.out.println("Ready to bonk some boys!");
+        } catch (NativeHookException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void playBonk() {
         try {
             System.out.println("Opening BONK...");
             File bonkFile = new File("src/main/resources/bonk.wav");
@@ -52,15 +87,17 @@ public class Bonk {
                     System.out.println("BONK!");
                 } finally {
                     clip.close();
-                    System.out.println("Closing Clip...");
                 }
             } finally {
                 inputStream.close();
-                System.out.println("Closing Stream...");
             }
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
-        System.out.println("Done!");
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Setting up service...");
+        new Bonk();
     }
 }
