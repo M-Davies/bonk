@@ -38,13 +38,17 @@ public class Bonk {
             GlobalScreen.addNativeKeyListener(new NativeKeyListener() {
                 boolean ctrlPressed = false;
 
+                public String getKeyText(NativeEvent keyEvent) {
+                    return NativeKeyEvent.getKeyText(keyEvent.getKeyCode());
+                }
+
                 @Override
                 public void nativeKeyTyped(NativeKeyEvent nativeEvent) {
                 }
 
                 @Override
                 public void nativeKeyReleased(NativeKeyEvent nativeEvent) {
-                    String keyText = NativeKeyEvent.getKeyText(nativeEvent.getKeyCode());
+                    String keyText = getKeyText(nativeEvent);
                     System.out.println("User Released: " + keyText);
                     if (ctrlPressed && keyText == "C") {
                         ctrlPressed = false;
@@ -54,7 +58,7 @@ public class Bonk {
 
                 @Override
                 public void nativeKeyPressed(NativeKeyEvent nativeEvent) {
-                    String keyText = NativeKeyEvent.getKeyText(nativeEvent.getKeyCode());
+                    String keyText = getKeyText(nativeEvent);
                     System.out.println("User Pressed: " + keyText);
                     if (keyText == "Ctrl") {
                         ctrlPressed = true;
