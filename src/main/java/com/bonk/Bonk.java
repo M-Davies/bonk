@@ -1,5 +1,6 @@
 package com.bonk;
 
+import java.util.Arrays;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,6 +12,8 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import java.security.SecureRandom;
+import org.identityconnectors.common.security.GuardedString;
 
 class AudioListener implements LineListener {
     private boolean done = false;
@@ -32,46 +35,62 @@ class AudioListener implements LineListener {
 }
 
 public class Bonk {
+    public static final char[] CTRL_CHARS = new char[]{'C', 't', 'r', 'l'};
+    public static final char[] C_CHARS = new char[]{'C'};
+
     public Bonk() {
         try {
             GlobalScreen.registerNativeHook();
             GlobalScreen.addNativeKeyListener(new NativeKeyListener() {
                 boolean ctrlPressed = false;
 
-                public String getKeyText(NativeEvent keyEvent) {
-                    return NativeKeyEvent.getKeyText(keyEvent.getKeyCode());
+                public GuardedString getKeyText(NativeKeyEvent keyEvent) {
+                    // Get and encrypt keypress code
+                    char[] keypressChars = NativeKeyEvent.getKeyText(keyEvent.getKeyCode()).toCharArray();
+                    GuardedString guardedChars = new GuardedString(keypressChars);
+                    guardedChars.makeReadOnly();
+
+                    // Wipe insecure char array in memory
+                    SecureRandom sr = new SecureRandom();
+                    for (int i = 0; i < keypressChars.length; i++)
+                        keypressChars[i] = (char) sr.nextInt(Character.MAX_VALUE + 1);
+                    keypressChars = null;
+
+                    return guardedChars;
                 }
 
                 @Override
-                public void nativeKeyTyped(NativeKeyEvent nativeEvent) {
-                }
+                public void nativeKeyTyped(NativeKeyEvent nativeEvent) {}
 
                 @Override
                 public void nativeKeyReleased(NativeKeyEvent nativeEvent) {
-                    String keyText = getKeyText(nativeEvent);
-                    System.out.println("User Released: " + keyText);
-                    if (ctrlPressed && keyText == "C") {
-                        ctrlPressed = false;
-                        playBonk();
-                    }
+                    GuardedString keyText = getKeyText(nativeEvent);        
+                    keyText.access((char[] keyChars) -> {
+                        if (ctrlPressed && Arrays.equals(keyChars, C_CHARS)) {
+                            ctrlPressed = false;
+                            playBonk();
+                        }
+                    });
                 }
 
                 @Override
                 public void nativeKeyPressed(NativeKeyEvent nativeEvent) {
-                    String keyText = getKeyText(nativeEvent);
-                    System.out.println("User Pressed: " + keyText);
-                    if (keyText == "Ctrl") {
-                        ctrlPressed = true;
-                    }
+                    GuardedString keyText = getKeyText(nativeEvent);
+                    keyText.access((char[] keyChars) -> {
+                        if (Arrays.equals(keyChars, CTRL_CHARS)) {
+                            ctrlPressed = true;
+                        }
+                    });
                 }
             });
             System.out.println("Ready to bonk some boys!");
         } catch (NativeHookException e) {
+            System.err.println("Failed to setup keypress listiner. Do your permissions allowing for bonking?. Stacktrace:");
             e.printStackTrace();
         }
     }
 
-    private static void playBonk() {
+    public static void playBonk() {
         try {
             System.out.println("Opening BONK...");
             File bonkFile = new File("src/main/resources/bonk.wav");
@@ -96,7 +115,8 @@ public class Bonk {
                 inputStream.close();
             }
         } catch (Exception e) {
-            System.err.println(e.getMessage());
+            System.err.println("Failed to play bonk sound. Please report this stacktrace to the author of the project:");
+            e.printStackTrace();
         }
     }
 
